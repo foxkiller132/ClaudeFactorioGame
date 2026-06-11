@@ -1,0 +1,59 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body { overflow: hidden; background: #0a0a14; }
+
+body {
+  font: 13px/1.4 'Segoe UI', system-ui, sans-serif;
+  color: #d8d4c8;
+  user-select: none;
+}
+
+#game { display: block; cursor: crosshair; }
+
+#topbar, #sidepanel, #inspector, #toolbar, #log {
+  position: fixed;
+  background: rgba(16, 14, 28, 0.88);
+  border: 1px solid #3a3454;
+  border-radius: 4px;
+  padding: 6px 10px;
+}
+
+#topbar { top: 8px; left: 8px; right: 8px; }
+
+#toolbar {
+  bottom: 8px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 4px; padding: 6px;
+}
+#toolbar button {
+  width: 38px; height: 38px;
+  font-size: 20px;
+  background: #1c1830; color: #d8d4c8;
+  border: 1px solid #3a3454; border-radius: 4px;
+  cursor: pointer;
+}
+#toolbar button:hover { background: #2a2448; }
+#toolbar button.active { border-color: #b09cf0; background: #343060; }
+#toolbar button.locked { opacity: 0.3; }
+
+#sidepanel { top: 48px; right: 8px; width: 230px; max-height: 70vh; overflow-y: auto; }
+#sidepanel h3 { font-size: 12px; text-transform: uppercase; color: #9a90c0; margin: 6px 0 4px; }
+.inv span { display: inline-block; margin-right: 10px; }
+
+.tech { padding: 4px 6px; margin: 2px 0; border-radius: 3px; background: #1c1830; }
+.tech.avail, .tech.current { cursor: pointer; }
+.tech.avail:hover { background: #2a2448; }
+.tech.current { border: 1px solid #b09cf0; }
+.tech.done { color: #80c080; }
+.tech.locked { opacity: 0.4; }
+
+#inspector { bottom: 64px; left: 8px; width: 280px; display: none; }
+#inspector button {
+  margin-top: 6px; padding: 4px 8px;
+  background: #1c1830; color: #d8d4c8;
+  border: 1px solid #3a3454; border-radius: 3px; cursor: pointer;
+}
+
+#log { bottom: 64px; right: 8px; max-width: 320px; color: #b0a890; pointer-events: none; }
+
+.dim { color: #7a7490; }
+.bad { color: #e06060; }
