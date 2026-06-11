@@ -55,5 +55,17 @@ body {
 
 #log { bottom: 64px; right: 8px; max-width: 320px; color: #b0a890; pointer-events: none; }
 
+#tooltip {
+  position: fixed;
+  display: none;
+  max-width: 280px;
+  background: rgba(16, 14, 28, 0.95);
+  border: 1px solid #5a5080;
+  border-radius: 4px;
+  padding: 6px 10px;
+  pointer-events: none;
+  z-index: 10;
+}
+
 .dim { color: #7a7490; }
 .bad { color: #e06060; }

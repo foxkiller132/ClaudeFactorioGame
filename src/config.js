@@ -35,3 +35,7 @@ export const LINK_RANGE = 12;         // max distance between mana sources to jo
 
 // Hand mining yield per click
 export const MINE_YIELD = 2;
+
+// Player character
+export const PLAYER_SPEED = 6;   // tiles per second (shift sprints)
+export const PLAYER_REACH = 8;   // max build/mine/demolish distance in tiles

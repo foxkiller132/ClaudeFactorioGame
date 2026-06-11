@@ -4,7 +4,7 @@
 // size. Entities are culled to the viewport.
 
 import { CHUNK, TILE_PX, T_GRASS, T_ROCK, T_ABYSS, T_CRYSTAL, T_STONE, T_LEYWELL } from './config.js';
-import { LINK_RANGE } from './config.js';
+import { LINK_RANGE, PLAYER_REACH } from './config.js';
 
 const TERRAIN_COLORS = {
   [T_GRASS]: ['#26301f', '#2b3623'],
@@ -23,7 +23,9 @@ export class Renderer {
     this.cam = { x: 0, y: 0, zoom: 24 }; // zoom = screen px per tile
     this.chunkCache = new Map();          // key -> canvas
     this.hover = null;                    // {x, y} tile under cursor
+    this.hoverF = null;                   // precise world coords under cursor
     this.placing = null;                  // building type being placed (ghost)
+    this.showReach = false;               // draw the wizard's reach ring (active tool)
   }
 
   worldToScreen(wx, wy) {
@@ -151,6 +153,32 @@ export class Renderer {
         const [bx, by] = this.worldToScreen(t.x + 0.5, t.y + 0.5);
         ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
       }
+    }
+
+    // the wizard
+    {
+      const p = game.player;
+      const [sx, sy] = this.worldToScreen(p.x, p.y);
+      const r = Math.max(4, z * 0.32);
+      if (this.showReach) {
+        ctx.strokeStyle = 'rgba(220, 220, 255, 0.25)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 6]);
+        ctx.beginPath(); ctx.arc(sx, sy, PLAYER_REACH * z, 0, 7); ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      ctx.beginPath(); ctx.ellipse(sx, sy + r * 0.8, r * 0.9, r * 0.35, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#4868d0';                       // robe
+      ctx.beginPath(); ctx.arc(sx, sy, r, 0, 7); ctx.fill();
+      ctx.fillStyle = '#e8d8b0';                       // face
+      ctx.beginPath(); ctx.arc(sx, sy - r * 0.35, r * 0.45, 0, 7); ctx.fill();
+      ctx.fillStyle = '#283a90';                       // hat
+      ctx.beginPath();
+      ctx.moveTo(sx - r * 0.8, sy - r * 0.55);
+      ctx.lineTo(sx + r * 0.8, sy - r * 0.55);
+      ctx.lineTo(sx + r * 0.1, sy - r * 1.9);
+      ctx.closePath(); ctx.fill();
     }
 
     // golems

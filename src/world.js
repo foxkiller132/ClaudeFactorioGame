@@ -31,6 +31,7 @@ function valueNoise(x, y, scale, seed) {
 // Centered near (0,0) so a new game is always playable.
 
 const START_PATCHES = [
+  { x: 4, y: 4, r: 3, t: T_GRASS, res: 0 },   // clear ground so the wizard always spawns walkable
   { x: 0, y: 0, r: 1, t: T_LEYWELL, res: 0 },
   { x: 7, y: -5, r: 3, t: T_CRYSTAL, res: 600 },
   { x: -8, y: 6, r: 3, t: T_STONE, res: 600 },

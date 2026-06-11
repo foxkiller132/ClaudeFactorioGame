@@ -4,7 +4,9 @@
 //
 //   node test/smoke.mjs
 
-import { createGame, placeBuilding, invAdd, invGet } from '../src/state.js';
+import {
+  createGame, placeBuilding, invAdd, invGet, movePlayer, inReach,
+} from '../src/state.js';
 import { gameTick } from '../src/game.js';
 import { selectResearch } from '../src/systems/research.js';
 import { linkPortals } from '../src/systems/portals.js';
@@ -104,6 +106,21 @@ if (game.nests.length) {
   const before = game.stats.wraithKills;
   run(game, 10);
   check('ward killed a wraith', game.stats.wraithKills > before);
+}
+
+// --- player character ----------------------------------------------------------------
+{
+  const g2 = createGame(42);
+  const px = g2.player.x;
+  movePlayer(g2, 1, 0);
+  check('player walks on clear ground', g2.player.x === px + 1);
+  const block = placeBuilding(g2, 'reliquary', Math.floor(g2.player.x) + 1, Math.floor(g2.player.y));
+  check('blocking building placed', typeof block === 'object', String(block));
+  const bx = g2.player.x;
+  movePlayer(g2, 1, 0);
+  check('player blocked by building', g2.player.x === bx);
+  check('reach: near tile in range', inReach(g2, Math.floor(g2.player.x) + 2, Math.floor(g2.player.y)));
+  check('reach: far tile out of range', !inReach(g2, Math.floor(g2.player.x) + 30, Math.floor(g2.player.y)));
 }
 
 // --- determinism sanity: same seed, same world -------------------------------------

@@ -1,11 +1,11 @@
 // Entry point: wires the DOM-free simulation to the canvas renderer and UI,
 // and runs a fixed-timestep loop (render decoupled from simulation).
 
-import { createGame, logMsg } from './state.js';
+import { createGame, logMsg, movePlayer } from './state.js';
 import { gameTick } from './game.js';
 import { Renderer } from './render.js';
 import { UI } from './ui.js';
-import { UPS } from './config.js';
+import { UPS, PLAYER_SPEED } from './config.js';
 
 const canvas = document.getElementById('game');
 const game = createGame(Date.now() & 0xffff);
@@ -32,21 +32,33 @@ addEventListener('keydown', e => {
 addEventListener('keyup', e => keys.delete(e.key.toLowerCase()));
 
 let dragging = false, dragMoved = false, lastMouse = [0, 0];
+let followCam = true; // camera tracks the wizard until the player free-pans
 
 canvas.addEventListener('mousedown', e => {
   if (e.button === 1 || e.button === 0) { dragging = e.button === 1; dragMoved = false; }
   lastMouse = [e.clientX, e.clientY];
 });
-canvas.addEventListener('mousemove', e => {
+// Document-level so hover state and tooltips update over UI panels too.
+document.addEventListener('mousemove', e => {
   const dx = e.clientX - lastMouse[0], dy = e.clientY - lastMouse[1];
   if (dragging) {
     renderer.cam.x -= dx / renderer.cam.zoom;
     renderer.cam.y -= dy / renderer.cam.zoom;
     dragMoved = true;
+    followCam = false;
   }
   lastMouse = [e.clientX, e.clientY];
-  const [wx, wy] = renderer.screenToWorld(e.clientX, e.clientY);
-  renderer.hover = { x: Math.floor(wx), y: Math.floor(wy) };
+  ui.mouse = [e.clientX, e.clientY];
+  if (e.target === canvas) {
+    const [wx, wy] = renderer.screenToWorld(e.clientX, e.clientY);
+    renderer.hover = { x: Math.floor(wx), y: Math.floor(wy) };
+    renderer.hoverF = { x: wx, y: wy };
+    ui.uiTip = null;
+  } else {
+    renderer.hover = renderer.hoverF = null;
+    const tipped = e.target.closest && e.target.closest('[data-tip]');
+    ui.uiTip = tipped ? tipped.dataset.tip : null;
+  }
 });
 canvas.addEventListener('mouseup', e => {
   dragging = false;
@@ -76,12 +88,23 @@ function frame(now) {
   last = now;
   dt = Math.min(dt, 0.25); // avoid spiral of death after a paused tab
 
-  // camera pan
-  const pan = (keys.has('shift') ? 40 : 20) * dt;
-  if (keys.has('w') || keys.has('arrowup')) renderer.cam.y -= pan;
-  if (keys.has('s') || keys.has('arrowdown')) renderer.cam.y += pan;
-  if (keys.has('a') || keys.has('arrowleft')) renderer.cam.x -= pan;
-  if (keys.has('d') || keys.has('arrowright')) renderer.cam.x += pan;
+  // wizard movement (camera follows)
+  let mx = 0, my = 0;
+  if (keys.has('w') || keys.has('arrowup')) my -= 1;
+  if (keys.has('s') || keys.has('arrowdown')) my += 1;
+  if (keys.has('a') || keys.has('arrowleft')) mx -= 1;
+  if (keys.has('d') || keys.has('arrowright')) mx += 1;
+  if (mx || my) {
+    const speed = PLAYER_SPEED * (keys.has('shift') ? 1.6 : 1) * dt;
+    const len = Math.hypot(mx, my);
+    movePlayer(game, mx / len * speed, my / len * speed);
+    followCam = true;
+  }
+  if (followCam) {
+    const k = Math.min(1, dt * 8);
+    renderer.cam.x += (game.player.x - renderer.cam.x) * k;
+    renderer.cam.y += (game.player.y - renderer.cam.y) * k;
+  }
 
   acc += dt;
   const step = 1 / UPS;

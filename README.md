@@ -40,9 +40,13 @@ node test/smoke.mjs
    from adjacent outputs and its twin pushes into adjacent inputs anywhere on
    the map.
 
-Controls: WASD/arrows or middle-drag to pan, wheel to zoom, left-click to
-use the selected tool, right-click to demolish (or cancel the current tool),
-Esc to return to select.
+Controls: WASD/arrows walk your wizard (shift to sprint; the camera follows,
+middle-drag to free-look), wheel to zoom, left-click to use the selected tool,
+right-click to demolish (or cancel the current tool), Esc to return to select.
+Building, mining, demolishing, and banishing only work within the wizard's
+reach (the dashed ring shown while a tool is active). Hover anything — 
+buildings, deposits, wraiths, golems, shrines, toolbar buttons, techs — for a
+context box describing it.
 
 ### Theme mapping
 

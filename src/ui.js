@@ -5,12 +5,14 @@
 import { ITEMS, BUILDINGS, RECIPES, TECHS } from './defs.js';
 import {
   canPlace, placeBuilding, removeBuilding, buildingAt, invGet, logMsg,
+  inReach, invAdd,
 } from './state.js';
 import { canResearch, selectResearch } from './systems/research.js';
 import { linkPortals } from './systems/portals.js';
 import { banishAt } from './systems/enemies.js';
-import { T_CRYSTAL, T_STONE, MINE_YIELD } from './config.js';
-import { invAdd } from './state.js';
+import {
+  T_CRYSTAL, T_STONE, T_LEYWELL, T_ROCK, T_ABYSS, MINE_YIELD,
+} from './config.js';
 
 export class UI {
   constructor(game, renderer) {
@@ -19,12 +21,15 @@ export class UI {
     this.tool = 'select';        // 'select' | 'mine' | 'banish' | building type
     this.selected = null;        // selected building
     this.linking = null;         // portal awaiting its twin
+    this.mouse = [0, 0];         // last cursor position (screen px)
+    this.uiTip = null;           // tooltip text for a hovered [data-tip] element
     this.el = {
       top: document.getElementById('topbar'),
       toolbar: document.getElementById('toolbar'),
       side: document.getElementById('sidepanel'),
       inspector: document.getElementById('inspector'),
       log: document.getElementById('log'),
+      tooltip: document.getElementById('tooltip'),
     };
     this.buildToolbar();
   }
@@ -35,6 +40,7 @@ export class UI {
     const isBuilding = tool in BUILDINGS;
     this.renderer.placing = isBuilding ? tool : null;
     this.renderer.placingDef = isBuilding ? BUILDINGS[tool] : null;
+    this.renderer.showReach = tool !== 'select';
     for (const btn of this.el.toolbar.children) {
       btn.classList.toggle('active', btn.dataset.tool === tool);
     }
@@ -63,7 +69,7 @@ export class UI {
     const btn = document.createElement('button');
     btn.dataset.tool = tool;
     btn.textContent = glyph;
-    btn.title = tip;
+    btn.dataset.tip = tip;
     btn.onclick = () => this.setTool(tool);
     return btn;
   }
@@ -72,6 +78,11 @@ export class UI {
 
   onClick(tx, ty) {
     const game = this.game;
+    const activeTool = this.tool !== 'select';
+    if (activeTool && !inReach(game, tx, ty)) {
+      logMsg(game, 'Out of reach — walk closer.');
+      return;
+    }
     if (this.tool in BUILDINGS) {
       const res = placeBuilding(game, this.tool, tx, ty);
       if (typeof res === 'string') logMsg(game, `Cannot build: ${res}`);
@@ -103,6 +114,10 @@ export class UI {
   onRightClick(tx, ty) {
     if (this.tool !== 'select') { this.setTool('select'); return; }
     const b = buildingAt(this.game, tx, ty);
+    if (b && !inReach(this.game, tx, ty)) {
+      logMsg(this.game, 'Out of reach — walk closer to demolish.');
+      return;
+    }
     if (b) {
       removeBuilding(this.game, b, true);
       if (this.selected === b) this.selected = null;
@@ -125,7 +140,82 @@ export class UI {
     this.refreshSide();
     this.refreshInspector();
     this.refreshToolbarAvail();
+    this.refreshTooltip();
     this.el.log.innerHTML = g.log.slice(-4).map(m => m.text).join('<br>');
+  }
+
+  // --- hover context boxes ----------------------------------------------------
+
+  refreshTooltip() {
+    const tip = this.el.tooltip;
+    const html = this.uiTip
+      ? this.uiTip.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\n/g, '<br>')
+      : this.worldTip();
+    if (!html) { tip.style.display = 'none'; return; }
+    tip.innerHTML = html;
+    tip.style.display = 'block';
+    const [mx, my] = this.mouse;
+    const r = tip.getBoundingClientRect();
+    tip.style.left = Math.min(mx + 16, innerWidth - r.width - 8) + 'px';
+    tip.style.top = Math.min(my + 16, innerHeight - r.height - 8) + 'px';
+  }
+
+  // Context box for whatever is under the cursor in the world, or null.
+  worldTip() {
+    const hover = this.renderer.hover, hf = this.renderer.hoverF;
+    if (!hover) return null;
+    const g = this.game;
+
+    const near = (e, r) => (e.x - hf.x) ** 2 + (e.y - hf.y) ** 2 < r * r;
+    const wraith = g.wraiths.find(w => near(w, 0.6));
+    if (wraith) return `<b>Wraith</b><br>HP ${wraith.hp | 0}/${wraith.maxHp}`;
+    const golem = g.golems.find(go => near(go, 0.5));
+    if (golem) {
+      const doing = golem.carry
+        ? `hauling ${golem.carry.n} ${ITEMS[golem.carry.item].name}`
+        : golem.state === 'idle' ? 'idle' : 'fetching';
+      return `<b>Golem</b><br>${doing}`;
+    }
+
+    const b = buildingAt(g, hover.x, hover.y);
+    if (b) return this.buildingTip(b);
+
+    const nest = g.nests.find(n =>
+      Math.abs(n.x + 0.5 - hf.x) < 1.5 && Math.abs(n.y + 0.5 - hf.y) < 1.5);
+    if (nest) {
+      return `<b>Dark Shrine</b><br>` +
+        `charge ${Math.min(100, nest.charge / nest.threshold * 100) | 0}%<br>` +
+        `<span class="dim">Drinks corruption to spawn wraiths.<br>` +
+        `Destroy with a Banish Sigil (✴).</span>`;
+    }
+
+    const t = g.world.getTile(hover.x, hover.y);
+    if (t === T_CRYSTAL || t === T_STONE) {
+      const name = t === T_CRYSTAL ? 'Mana Crystal Deposit' : 'Stone Deposit';
+      return `<b>${name}</b><br>${g.world.getReserve(hover.x, hover.y)} remaining` +
+        `<br><span class="dim">Hand-mine (⛏) or place a Siphon.</span>`;
+    }
+    if (t === T_LEYWELL) return `<b>Ley Well</b><br><span class="dim">Place a Ley Tap here to draw mana.</span>`;
+    if (t === T_ROCK) return `<b>Ancient Rock</b><br><span class="dim">Impassable.</span>`;
+    if (t === T_ABYSS) return `<b>The Abyss</b><br><span class="dim">Nothing can be built over it.</span>`;
+    return null;
+  }
+
+  buildingTip(b) {
+    const mana = b.network >= 0 || b.def.coverage
+      ? `${(b.ratio * 100) | 0}%`
+      : '<span class="bad">no network</span>';
+    let html = `<b style="color:${b.def.color}">${b.def.name}</b><br>` +
+      `HP ${b.hp | 0}/${b.def.hp}` +
+      (b.def.manaUse || b.def.manaOut ? ` · mana ${mana}` : '');
+    if (b.type === 'runeforge') html += `<br>recipe: ${RECIPES[b.recipeId] ? b.recipeId : 'none'}`;
+    if (b.type === 'portal') html += `<br>${b.linkId ? `linked to portal #${b.linkId}` : 'unlinked'}`;
+    if (b.progress > 0) html += `<br>progress ${(Math.min(1, b.progress) * 100) | 0}%`;
+    if (b.inv.size) {
+      html += '<br><span class="dim">' +
+        [...b.inv].map(([i, n]) => `${ITEMS[i].name}: ${n}`).join(' · ') + '</span>';
+    }
+    return html;
   }
 
   refreshToolbarAvail() {
@@ -143,7 +233,7 @@ export class UI {
     let html = '<h3>Satchel</h3><div class="inv">';
     for (const id in ITEMS) {
       const n = invGet(g.player.inv, id);
-      if (n > 0) html += `<span title="${ITEMS[id].name}" style="color:${ITEMS[id].color}">${ITEMS[id].name}: ${n}</span>`;
+      if (n > 0) html += `<span style="color:${ITEMS[id].color}">${ITEMS[id].name}: ${n}</span>`;
     }
     html += '</div><h3>Research</h3>';
     for (const id in TECHS) {
@@ -152,7 +242,7 @@ export class UI {
       const avail = canResearch(g, id);
       const cur = g.research.current === id;
       const cls = done ? 'tech done' : cur ? 'tech current' : avail ? 'tech avail' : 'tech locked';
-      html += `<div class="${cls}" data-tech="${id}" title="${t.desc}">` +
+      html += `<div class="${cls}" data-tech="${id}" data-tip="${t.desc}">` +
         `${t.name} <span class="dim">${done ? '✓' : cur ? `${g.research.progress | 0}/${t.cost}` : t.cost}</span></div>`;
     }
     this.el.side.innerHTML = html;

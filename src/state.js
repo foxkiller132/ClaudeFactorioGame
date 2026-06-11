@@ -1,7 +1,10 @@
 // Game state container and building lifecycle. No DOM or rendering here:
 // the whole simulation can run headless (see test/smoke.mjs).
 
-import { CHUNK, T_CRYSTAL, T_STONE, T_LEYWELL, BUILDABLE } from './config.js';
+import {
+  CHUNK, T_CRYSTAL, T_STONE, T_LEYWELL, T_ROCK, T_ABYSS, BUILDABLE,
+  PLAYER_REACH,
+} from './config.js';
 import { BUILDINGS, RECIPES, START_INVENTORY } from './defs.js';
 import { World } from './world.js';
 
@@ -52,7 +55,7 @@ export function createGame(seed = 1337) {
     jobs: [],
     corruption: new Map(),    // "cx,cy" -> float
     effects: [],              // transient render effects { type, x, y, x2, y2, ttl }
-    player: { inv: new Map() },
+    player: { x: 4.5, y: 4.5, inv: new Map() },
     research: { current: null, progress: 0, unlocked: new Set() },
     mods: { speed: 1, manaOut: 1, wardDmg: 1, wardRange: 0 },
     stats: { supply: 0, demand: 0, satisfaction: 1, wraithKills: 0 },
@@ -73,6 +76,28 @@ export function logMsg(game, text) {
 
 export function chunkKeyOf(x, y) {
   return Math.floor(x / CHUNK) + ',' + Math.floor(y / CHUNK);
+}
+
+// --- player character ------------------------------------------------------------
+
+function walkable(game, x, y) {
+  const tx = Math.floor(x), ty = Math.floor(y);
+  const t = game.world.getTile(tx, ty);
+  if (t === T_ROCK || t === T_ABYSS) return false;
+  return !game.byTile.has(tx + ',' + ty);
+}
+
+// Move the wizard by (dx, dy), sliding along blocked axes.
+export function movePlayer(game, dx, dy) {
+  const p = game.player;
+  if (dx && walkable(game, p.x + dx, p.y)) p.x += dx;
+  if (dy && walkable(game, p.x, p.y + dy)) p.y += dy;
+}
+
+// Whether tile (x, y) is within the wizard's interaction reach.
+export function inReach(game, x, y) {
+  const d2 = (x + 0.5 - game.player.x) ** 2 + (y + 0.5 - game.player.y) ** 2;
+  return d2 <= PLAYER_REACH * PLAYER_REACH;
 }
 
 // --- building lifecycle ---------------------------------------------------------
