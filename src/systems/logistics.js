@@ -35,6 +35,9 @@ function unreserve(map, item, n) {
 
 export function scanJobs(game) {
   if (game.tick % JOB_SCAN_TICKS !== 0) return;
+  // No golems means no hauling: don't create jobs whose reservations would
+  // lock items away from the wizard's manual Take/Feed.
+  if (game.golems.length === 0) return;
 
   // Index providers by item.
   const providers = new Map(); // item -> [building]

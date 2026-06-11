@@ -5,7 +5,7 @@
 import { ITEMS, BUILDINGS, RECIPES, TECHS } from './defs.js';
 import {
   canPlace, placeBuilding, removeBuilding, buildingAt, invGet, logMsg,
-  inReach, invAdd, toastMsg,
+  inReach, invAdd, toastMsg, takeAllFromBuilding, feedBuilding, wantedAmount,
 } from './state.js';
 import { canResearch, selectResearch } from './systems/research.js';
 import { linkPortals } from './systems/portals.js';
@@ -262,6 +262,13 @@ export class UI {
     if (b.inv.size) {
       html += '<div class="inv">' + [...b.inv].map(([i, n]) => `${ITEMS[i].name}: ${n}`).join(' · ') + '</div>';
     }
+    const reachable = inReach(this.game, b.x, b.y);
+    if (reachable && b.inv.size) {
+      html += `<button id="take-items" data-tip="Move this building's items into your satchel">Take all</button> `;
+    }
+    if (reachable && this.playerCanFeed(b)) {
+      html += `<button id="feed-items" data-tip="Hand over the items this building wants from your satchel">Feed</button>`;
+    }
     if (b.type === 'runeforge') {
       html += `<button id="cycle-recipe">Recipe: ${b.recipeId}</button>`;
     }
@@ -271,6 +278,16 @@ export class UI {
         : `<button id="link-portal">${this.linking === b ? 'Click target portal…' : 'Link…'}</button>`;
     }
     this.el.inspector.innerHTML = html;
+    const take = document.getElementById('take-items');
+    if (take) take.onclick = () => {
+      const moved = takeAllFromBuilding(this.game, b);
+      toastMsg(this.game, b.x + 0.5, b.y + 0.5, moved ? `+${moved} items` : 'nothing free to take');
+    };
+    const feed = document.getElementById('feed-items');
+    if (feed) feed.onclick = () => {
+      const moved = feedBuilding(this.game, b);
+      toastMsg(this.game, b.x + 0.5, b.y + 0.5, moved ? `fed ${moved} items` : 'nothing it wants');
+    };
     const cyc = document.getElementById('cycle-recipe');
     if (cyc) cyc.onclick = () => {
       const ids = Object.keys(RECIPES).filter(id =>
@@ -280,5 +297,13 @@ export class UI {
     };
     const link = document.getElementById('link-portal');
     if (link) link.onclick = () => { this.linking = b; };
+  }
+
+  // Whether the wizard holds anything this building would accept.
+  playerCanFeed(b) {
+    for (const [item] of this.game.player.inv) {
+      if (wantedAmount(this.game, b, item) > 0) return true;
+    }
+    return false;
   }
 }

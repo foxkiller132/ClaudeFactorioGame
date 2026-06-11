@@ -6,6 +6,7 @@
 
 import {
   createGame, placeBuilding, invAdd, invGet, movePlayer, inReach,
+  takeAllFromBuilding, feedBuilding,
 } from '../src/state.js';
 import { gameTick } from '../src/game.js';
 import { selectResearch } from '../src/systems/research.js';
@@ -50,6 +51,15 @@ check('mana network formed', siphon.network >= 0 && siphon.network === tap.netwo
 check('siphon extracted crystals', invGet(siphon.inv, 'crystal') >= 3,
   `got ${invGet(siphon.inv, 'crystal')}`);
 
+// --- manual transfer: the pre-golem bootstrap path -------------------------------
+{
+  const before = invGet(game.player.inv, 'crystal');
+  const taken = takeAllFromBuilding(game, siphon);
+  check('take-all empties siphon into satchel', taken >= 3 && invGet(game.player.inv, 'crystal') === before + taken);
+  const fed = feedBuilding(game, infuser);
+  check('feed gives infuser its wanted crystals', fed > 0 && invGet(infuser.inv, 'crystal') > 0);
+}
+
 // --- golem hauling feeds the chain ---------------------------------------------
 game.research.unlocked.add('golems');
 const den = placeBuilding(game, 'golem_den', 1, -1);
@@ -59,8 +69,10 @@ check('golems spawned', game.golems.length === 3);
 forge.recipeId = 'scroll';
 invAdd(reliq.inv, 'stone', 100); // stand-in for a stone siphon feeding storage
 run(game, 60);
-check('golems delivered crystals to infuser', invGet(infuser.inv, 'crystal') > 0 || invGet(infuser.inv, 'shard') > 0);
 const scrolls = invGet(forge.inv, 'scroll') + invGet(athen.inv, 'scroll');
+// scrolls need stone (reliquary) AND shards (infuser), so they prove hauling
+check('golems hauled the production chain inputs', scrolls > 0 ||
+  invGet(infuser.inv, 'crystal') + invGet(infuser.inv, 'shard') > 0);
 // scrolls require shards, so scroll output also proves the infuser ran
 check('infuser produced shards', invGet(infuser.inv, 'shard') + invGet(forge.inv, 'shard') + scrolls > 0);
 check('runeforge produced scrolls', scrolls > 0,

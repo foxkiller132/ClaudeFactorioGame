@@ -30,13 +30,16 @@ node test/smoke.mjs
 3. Hand-mine (⛏) early materials, then chain **Infuser** (crystal → shard) →
    **Runeforge** (shards → runestones, scrolls, golem cores) →
    **Athenaeum** (scrolls → research).
-4. Research **Golem Legion**, build a **Golem Den**: golems automatically haul
+4. Before you have golems, you are the logistics: select a building within
+   reach and use **Take all** / **Feed** in the inspector to move items
+   between buildings and your satchel by hand.
+5. Research **Golem Legion**, build a **Golem Den**: golems automatically haul
    items between producers, consumers, and **Reliquary** storage.
-5. Your engine emits corruption; distant **dark shrines** (☠) drink it and
+6. Your engine emits corruption; distant **dark shrines** (☠) drink it and
    birth wraiths that hunt your buildings. Defend with **Ward Towers** (†),
    harvest **wraith essence** from kills, research **Rite of Banishment**, and
    destroy shrines with Banish Sigils (✴ tool).
-6. Research **Portal Network** for long-range logistics: a linked portal pulls
+7. Research **Portal Network** for long-range logistics: a linked portal pulls
    from adjacent outputs and its twin pushes into adjacent inputs anywhere on
    the map.
 

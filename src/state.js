@@ -5,7 +5,7 @@ import {
   CHUNK, T_CRYSTAL, T_STONE, T_LEYWELL, T_ROCK, T_ABYSS, BUILDABLE,
   PLAYER_REACH,
 } from './config.js';
-import { BUILDINGS, RECIPES, START_INVENTORY } from './defs.js';
+import { BUILDINGS, RECIPES, START_INVENTORY, ITEMS } from './defs.js';
 import { World } from './world.js';
 
 // --- inventory helpers (plain Maps of item -> count) ---------------------------
@@ -248,4 +248,32 @@ function totalIncoming(b) {
   let t = 0;
   for (const n of b.incoming.values()) t += n;
   return t;
+}
+
+// --- manual transfer (the wizard's hands) -----------------------------------------
+// The pre-golem way to move items: empty a building into the satchel, or feed a
+// building the inputs it wants. Reach checks live in the UI layer.
+
+export function takeAllFromBuilding(game, b) {
+  let moved = 0;
+  for (const [item, n] of [...b.inv]) {
+    const free = n - (b.reserved.get(item) || 0); // leave goods promised to golems
+    if (free <= 0) continue;
+    invTake(b.inv, item, free);
+    invAdd(game.player.inv, item, free);
+    moved += free;
+  }
+  return moved;
+}
+
+export function feedBuilding(game, b) {
+  let moved = 0;
+  for (const item in ITEMS) {
+    const want = wantedAmount(game, b, item);
+    if (want <= 0) continue;
+    const given = invTake(game.player.inv, item, want);
+    invAdd(b.inv, item, given);
+    moved += given;
+  }
+  return moved;
 }
