@@ -1,71 +1,108 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
-html, body { overflow: hidden; background: #0a0a14; }
+html, body { overflow: hidden; background: #07070f; }
 
 body {
-  font: 13px/1.4 'Segoe UI', system-ui, sans-serif;
+  font: 13px/1.45 Georgia, 'Palatino Linotype', serif;
   color: #d8d4c8;
   user-select: none;
 }
 
 #game { display: block; cursor: crosshair; }
 
-#topbar, #sidepanel, #inspector, #toolbar, #log {
+#topbar, #sidepanel, #inspector, #toolbar, #log, #tooltip {
   position: fixed;
-  background: rgba(16, 14, 28, 0.88);
-  border: 1px solid #3a3454;
-  border-radius: 4px;
-  padding: 6px 10px;
+  background: linear-gradient(180deg, rgba(22, 18, 38, 0.92), rgba(12, 10, 24, 0.92));
+  border: 1px solid #4a4070;
+  border-radius: 6px;
+  padding: 7px 11px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(180, 160, 255, 0.08);
+  backdrop-filter: blur(3px);
 }
 
-#topbar { top: 8px; left: 8px; right: 8px; }
+#topbar { top: 8px; left: 8px; right: 8px; letter-spacing: 0.02em; }
+#topbar b {
+  color: #c9b6ff;
+  letter-spacing: 0.25em;
+  text-shadow: 0 0 8px rgba(160, 110, 255, 0.6);
+}
 
 #toolbar {
   bottom: 8px; left: 50%; transform: translateX(-50%);
-  display: flex; gap: 4px; padding: 6px;
+  display: flex; gap: 5px; padding: 7px;
 }
 #toolbar button {
-  width: 38px; height: 38px;
+  width: 40px; height: 40px;
   font-size: 20px;
-  background: #1c1830; color: #d8d4c8;
-  border: 1px solid #3a3454; border-radius: 4px;
+  background: linear-gradient(180deg, #241e40, #181430);
+  color: #d8d4c8;
+  border: 1px solid #4a4070; border-radius: 6px;
   cursor: pointer;
+  transition: transform 0.08s ease, border-color 0.12s ease, box-shadow 0.12s ease;
 }
-#toolbar button:hover { background: #2a2448; }
-#toolbar button.active { border-color: #b09cf0; background: #343060; }
+#toolbar button:hover {
+  transform: translateY(-3px);
+  border-color: #8a78d0;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+}
+#toolbar button.active {
+  border-color: #c0aaff;
+  background: linear-gradient(180deg, #3a3268, #2a2450);
+  box-shadow: 0 0 12px rgba(150, 120, 255, 0.45);
+}
 #toolbar button.locked { opacity: 0.3; }
 
-#sidepanel { top: 48px; right: 8px; width: 230px; max-height: 70vh; overflow-y: auto; }
-#sidepanel h3 { font-size: 12px; text-transform: uppercase; color: #9a90c0; margin: 6px 0 4px; }
+#sidepanel { top: 48px; right: 8px; width: 232px; max-height: 70vh; overflow-y: auto; }
+#sidepanel h3 {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em;
+  color: #9a90c0; margin: 7px 0 5px;
+  border-bottom: 1px solid #3a3454; padding-bottom: 3px;
+}
 .inv span { display: inline-block; margin-right: 10px; }
 
-.tech { padding: 4px 6px; margin: 2px 0; border-radius: 3px; background: #1c1830; }
+.tech {
+  padding: 5px 7px; margin: 3px 0; border-radius: 4px;
+  background: rgba(40, 34, 70, 0.5);
+  border: 1px solid transparent;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
 .tech.avail, .tech.current { cursor: pointer; }
-.tech.avail:hover { background: #2a2448; }
-.tech.current { border: 1px solid #b09cf0; }
-.tech.done { color: #80c080; }
+.tech.avail:hover { background: rgba(60, 52, 104, 0.7); border-color: #6a5aa0; }
+.tech.current {
+  border-color: #b09cf0;
+  box-shadow: 0 0 8px rgba(150, 120, 255, 0.3) inset;
+}
+.tech.done { color: #8ec88e; }
 .tech.locked { opacity: 0.4; }
 
-#inspector { bottom: 64px; left: 8px; width: 280px; display: none; }
+#inspector { bottom: 64px; left: 8px; width: 290px; display: none; }
+#inspector h3 { letter-spacing: 0.06em; margin-bottom: 2px; }
 #inspector button {
-  margin-top: 6px; padding: 4px 8px;
-  background: #1c1830; color: #d8d4c8;
-  border: 1px solid #3a3454; border-radius: 3px; cursor: pointer;
+  margin-top: 7px; padding: 5px 10px;
+  background: linear-gradient(180deg, #241e40, #181430);
+  color: #d8d4c8;
+  border: 1px solid #4a4070; border-radius: 4px; cursor: pointer;
+  font: inherit;
+}
+#inspector button:hover { border-color: #8a78d0; }
+
+#log {
+  bottom: 64px; right: 8px; max-width: 320px;
+  color: #b0a890; pointer-events: none;
+  font-style: italic;
 }
 
-#log { bottom: 64px; right: 8px; max-width: 320px; color: #b0a890; pointer-events: none; }
-
 #tooltip {
-  position: fixed;
   display: none;
   max-width: 280px;
-  background: rgba(16, 14, 28, 0.95);
-  border: 1px solid #5a5080;
-  border-radius: 4px;
-  padding: 6px 10px;
+  border-color: #6a5aa0;
   pointer-events: none;
   z-index: 10;
 }
 
 .dim { color: #7a7490; }
 .bad { color: #e06060; }
+
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #3a3454; border-radius: 4px; }

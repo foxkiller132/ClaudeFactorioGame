@@ -44,7 +44,8 @@ Controls: WASD/arrows walk your wizard (shift to sprint; the camera follows,
 middle-drag to free-look), wheel to zoom, left-click to use the selected tool,
 right-click to demolish (or cancel the current tool), Esc to return to select.
 Building, mining, demolishing, and banishing only work within the wizard's
-reach (the dashed ring shown while a tool is active). Hover anything — 
+reach — a floating "Too far away" prompt appears if you click beyond it.
+Hover anything — 
 buildings, deposits, wraiths, golems, shrines, toolbar buttons, techs — for a
 context box describing it.
 

@@ -114,7 +114,7 @@ function frame(now) {
     acc -= step;
   }
 
-  renderer.draw();
+  renderer.draw(now / 1000);
   frames++;
   statT += dt;
   if (statT >= 1) {

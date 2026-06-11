@@ -5,7 +5,7 @@
 import { ITEMS, BUILDINGS, RECIPES, TECHS } from './defs.js';
 import {
   canPlace, placeBuilding, removeBuilding, buildingAt, invGet, logMsg,
-  inReach, invAdd,
+  inReach, invAdd, toastMsg,
 } from './state.js';
 import { canResearch, selectResearch } from './systems/research.js';
 import { linkPortals } from './systems/portals.js';
@@ -40,7 +40,6 @@ export class UI {
     const isBuilding = tool in BUILDINGS;
     this.renderer.placing = isBuilding ? tool : null;
     this.renderer.placingDef = isBuilding ? BUILDINGS[tool] : null;
-    this.renderer.showReach = tool !== 'select';
     for (const btn of this.el.toolbar.children) {
       btn.classList.toggle('active', btn.dataset.tool === tool);
     }
@@ -80,12 +79,12 @@ export class UI {
     const game = this.game;
     const activeTool = this.tool !== 'select';
     if (activeTool && !inReach(game, tx, ty)) {
-      logMsg(game, 'Out of reach — walk closer.');
+      toastMsg(game, tx + 0.5, ty + 0.5, 'Too far away');
       return;
     }
     if (this.tool in BUILDINGS) {
       const res = placeBuilding(game, this.tool, tx, ty);
-      if (typeof res === 'string') logMsg(game, `Cannot build: ${res}`);
+      if (typeof res === 'string') toastMsg(game, tx + 0.5, ty + 0.5, res);
       return;
     }
     if (this.tool === 'mine') {
@@ -98,7 +97,7 @@ export class UI {
     }
     if (this.tool === 'banish') {
       const err = banishAt(game, tx + 0.5, ty + 0.5);
-      if (err) logMsg(game, `Banish failed: ${err}`);
+      if (err) toastMsg(game, tx + 0.5, ty + 0.5, err);
       return;
     }
     // select tool
@@ -115,7 +114,7 @@ export class UI {
     if (this.tool !== 'select') { this.setTool('select'); return; }
     const b = buildingAt(this.game, tx, ty);
     if (b && !inReach(this.game, tx, ty)) {
-      logMsg(this.game, 'Out of reach — walk closer to demolish.');
+      toastMsg(this.game, tx + 0.5, ty + 0.5, 'Too far away');
       return;
     }
     if (b) {

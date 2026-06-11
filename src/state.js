@@ -69,6 +69,11 @@ export function createGame(seed = 1337) {
   return game;
 }
 
+// Short-lived floating prompt in the world (e.g. "Too far away").
+export function toastMsg(game, x, y, text) {
+  game.effects.push({ type: 'toast', x, y, text, ttl: 1.4 });
+}
+
 export function logMsg(game, text) {
   game.log.push({ tick: game.tick, text });
   if (game.log.length > 50) game.log.shift();
@@ -175,6 +180,7 @@ export function damageBuilding(game, b, dmg) {
   b.hp -= dmg;
   if (b.hp <= 0) {
     removeBuilding(game, b, false);
+    game.effects.push({ type: 'banish', x: b.x + 0.5, y: b.y + 0.5, ttl: 0.8 });
     logMsg(game, `${b.def.name} destroyed by wraiths!`);
   }
 }
