@@ -16,6 +16,15 @@ export const T_LEYWELL = 5;
 
 export const BUILDABLE = new Set([T_GRASS, T_CRYSTAL, T_STONE, T_LEYWELL]);
 
+// World generation density / richness. Higher thresholds = rarer features;
+// richness scales how much each deposit tile holds.
+export const ROCK_THRESHOLD = 0.85;
+export const ABYSS_THRESHOLD = 0.07;
+export const DEPOSIT_THRESHOLD = 0.87;  // crystal/stone patch rarity
+export const DEPOSIT_BASE = 900;        // minimum units per deposit tile
+export const DEPOSIT_RICHNESS = 25000;  // extra units scaled by noise strength
+export const LEYWELL_CHANCE = 0.12;     // fraction of chunks containing a ley well
+
 // Logistics
 export const JOB_SCAN_TICKS = 30;     // rebuild golem job list every N ticks
 export const GOLEM_SPEED = 4.5;       // tiles per second

@@ -4,6 +4,8 @@
 import {
   CHUNK, T_GRASS, T_ROCK, T_ABYSS, T_CRYSTAL, T_STONE, T_LEYWELL,
   NEST_MIN_CHUNK_DIST, NEST_CHANCE,
+  ROCK_THRESHOLD, ABYSS_THRESHOLD, DEPOSIT_THRESHOLD, DEPOSIT_BASE,
+  DEPOSIT_RICHNESS, LEYWELL_CHANCE,
 } from './config.js';
 
 // --- deterministic hash noise -------------------------------------------------
@@ -33,8 +35,8 @@ function valueNoise(x, y, scale, seed) {
 const START_PATCHES = [
   { x: 4, y: 4, r: 3, t: T_GRASS, res: 0 },   // clear ground so the wizard always spawns walkable
   { x: 0, y: 0, r: 1, t: T_LEYWELL, res: 0 },
-  { x: 7, y: -5, r: 3, t: T_CRYSTAL, res: 600 },
-  { x: -8, y: 6, r: 3, t: T_STONE, res: 600 },
+  { x: 7, y: -5, r: 3, t: T_CRYSTAL, res: 2500 },
+  { x: -8, y: 6, r: 3, t: T_STONE, res: 2500 },
 ];
 
 export class World {
@@ -69,19 +71,25 @@ export class World {
         const i = ly * CHUNK + lx;
         const elev = valueNoise(x, y, 24, s);
         let t = T_GRASS;
-        if (elev > 0.80) t = T_ROCK;
-        else if (elev < 0.10) t = T_ABYSS;
+        if (elev > ROCK_THRESHOLD) t = T_ROCK;
+        else if (elev < ABYSS_THRESHOLD) t = T_ABYSS;
         else {
           const cN = valueNoise(x, y, 9, s + 7);
           const sN = valueNoise(x, y, 9, s + 13);
-          if (cN > 0.76) { t = T_CRYSTAL; res[i] = 150 + ((cN - 0.76) * 4000 | 0); }
-          else if (sN > 0.76) { t = T_STONE; res[i] = 150 + ((sN - 0.76) * 4000 | 0); }
+          const span = 1 - DEPOSIT_THRESHOLD;
+          if (cN > DEPOSIT_THRESHOLD) {
+            t = T_CRYSTAL;
+            res[i] = DEPOSIT_BASE + ((cN - DEPOSIT_THRESHOLD) / span * DEPOSIT_RICHNESS | 0);
+          } else if (sN > DEPOSIT_THRESHOLD) {
+            t = T_STONE;
+            res[i] = DEPOSIT_BASE + ((sN - DEPOSIT_THRESHOLD) / span * DEPOSIT_RICHNESS | 0);
+          }
         }
         tiles[i] = t;
       }
     }
-    // Rare ley wells: one deterministic 2x2 well in ~18% of chunks.
-    if (h2(cx, cy, s + 31) < 0.18) {
+    // Rare ley wells: one deterministic 2x2 well in a fraction of chunks.
+    if (h2(cx, cy, s + 31) < LEYWELL_CHANCE) {
       const ox = 4 + (h2(cx, cy, s + 37) * (CHUNK - 9) | 0);
       const oy = 4 + (h2(cx, cy, s + 41) * (CHUNK - 9) | 0);
       for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) {
