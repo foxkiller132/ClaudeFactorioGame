@@ -244,6 +244,8 @@ export class UI {
       html += `<div class="${cls}" data-tech="${id}" data-tip="${t.desc}">` +
         `${t.name} <span class="dim">${done ? '✓' : cur ? `${g.research.progress | 0}/${t.cost}` : t.cost}</span></div>`;
     }
+    if (html === this._sideHtml) return; // avoid destroying elements mid-click
+    this._sideHtml = html;
     this.el.side.innerHTML = html;
     for (const div of this.el.side.querySelectorAll('.tech.avail, .tech.current')) {
       div.onclick = () => selectResearch(g, div.dataset.tech);
@@ -254,6 +256,7 @@ export class UI {
     const b = this.selected;
     if (!b || !this.game.buildings.has(b.id)) {
       this.el.inspector.style.display = 'none';
+      this._inspHtml = null;
       return;
     }
     this.el.inspector.style.display = 'block';
@@ -269,6 +272,9 @@ export class UI {
     if (reachable && this.playerCanFeed(b)) {
       html += `<button id="feed-items" data-tip="Hand over the items this building wants from your satchel">Feed</button>`;
     }
+    if (!reachable && (b.inv.size || this.playerCanFeed(b))) {
+      html += `<div class="dim">Walk closer to transfer items by hand.</div>`;
+    }
     if (b.type === 'runeforge') {
       html += `<button id="cycle-recipe">Recipe: ${b.recipeId}</button>`;
     }
@@ -277,6 +283,10 @@ export class UI {
         ? `<div>Linked to portal #${b.linkId}</div>`
         : `<button id="link-portal">${this.linking === b ? 'Click target portal…' : 'Link…'}</button>`;
     }
+    // Only touch the DOM when content actually changed: rewriting innerHTML
+    // every frame would destroy buttons mid-click, making them unclickable.
+    if (html === this._inspHtml) return;
+    this._inspHtml = html;
     this.el.inspector.innerHTML = html;
     const take = document.getElementById('take-items');
     if (take) take.onclick = () => {
