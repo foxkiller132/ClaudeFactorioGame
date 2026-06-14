@@ -14,6 +14,37 @@
   <div id="log"></div>
   <div id="toolbar"></div>
   <div id="tooltip"></div>
+  <div id="fatal"></div>
+  <!-- Classic inline script: runs even if the ES module below fails to load
+       (stale cache, file:// CORS, 404, syntax error) so failures are visible
+       on-screen instead of looking like a blank "basic html" page. -->
+  <script>
+    (function () {
+      var box = document.getElementById('fatal');
+      var booted = false;
+      function show(msg) {
+        box.style.display = 'block';
+        box.textContent = 'Arcanum failed to start:\n\n' + msg +
+          '\n\nMost common fixes:\n' +
+          '• Hard-reload to clear cached scripts (Ctrl+Shift+R / Cmd+Shift+R).\n' +
+          '• Serve over HTTP, not file:// — run "python3 -m http.server" and open http://localhost:8000.\n' +
+          '• Check the browser console (F12) for the red error above.';
+      }
+      window.addEventListener('error', function (e) {
+        show((e && e.message ? e.message : 'script error') +
+          (e && e.filename ? '\n  at ' + e.filename + ':' + e.lineno : ''));
+      });
+      window.addEventListener('unhandledrejection', function (e) {
+        show('Unhandled promise rejection: ' + (e && e.reason ? e.reason : 'unknown'));
+      });
+      // If the module never signals a successful boot, surface that too.
+      window.__arcanumBooted = function () { booted = true; };
+      setTimeout(function () {
+        if (!booted) show('The game module did not start within 4s. It likely ' +
+          'failed to load (cache, file://, or a missing file).');
+      }, 4000);
+    })();
+  </script>
   <script type="module" src="src/main.js"></script>
 </body>
 </html>

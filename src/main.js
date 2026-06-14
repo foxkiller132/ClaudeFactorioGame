@@ -179,3 +179,6 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
+
+// Tell the inline boot watchdog (index.html) we started cleanly.
+if (typeof window.__arcanumBooted === 'function') window.__arcanumBooted();

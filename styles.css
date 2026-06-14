@@ -100,6 +100,26 @@ body {
   z-index: 10;
 }
 
+#fatal {
+  position: fixed;
+  display: none;
+  inset: 0;
+  margin: auto;
+  width: max-content;
+  max-width: 90vw;
+  height: max-content;
+  max-height: 80vh;
+  overflow: auto;
+  padding: 20px 24px;
+  background: rgba(20, 8, 16, 0.97);
+  border: 1px solid #a04050;
+  border-radius: 8px;
+  color: #f0c0c0;
+  font: 13px/1.5 ui-monospace, Menlo, Consolas, monospace;
+  white-space: pre-wrap;
+  z-index: 100;
+}
+
 .dim { color: #7a7490; }
 .bad { color: #e06060; }
 
