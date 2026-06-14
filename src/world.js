@@ -44,6 +44,7 @@ export class World {
     this.seed = seed | 0;
     this.chunks = new Map();      // "cx,cy" -> { tiles: Uint8Array, res: Uint32Array }
     this.dirty = new Set();       // chunk keys whose render cache must refresh
+    this.modified = new Set();    // chunk keys diverged from generation (for saves)
     this.onChunkGen = null;       // (cx, cy) => void, set by the game for nest placement
   }
 
@@ -130,11 +131,23 @@ export class World {
     const i = (y - cy * CHUNK) * CHUNK + (x - cx * CHUNK);
     const take = Math.min(n, c.res[i]);
     c.res[i] -= take;
+    if (take > 0) this.modified.add(this.key(cx, cy));
     if (c.res[i] === 0 && (c.tiles[i] === T_CRYSTAL || c.tiles[i] === T_STONE)) {
       c.tiles[i] = T_GRASS;
       this.dirty.add(this.key(cx, cy));
     }
     return take;
+  }
+
+  // Overlay a saved chunk's tiles+res onto generation, marking it modified so a
+  // re-save preserves it even if it is evicted from the live cache meanwhile.
+  applyChunkDelta(cx, cy, tiles, res) {
+    const k = this.key(cx, cy);
+    const c = this.chunkAt(cx, cy);
+    c.tiles.set(tiles);
+    c.res.set(res);
+    this.modified.add(k);
+    this.dirty.add(k);
   }
 
   // Deterministic nest placement for a freshly generated chunk, or null.

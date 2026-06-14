@@ -135,6 +135,35 @@ if (game.nests.length) {
   check('reach: far tile out of range', !inReach(g2, Math.floor(g2.player.x) + 30, Math.floor(g2.player.y)));
 }
 
+// --- save / load round-trip ---------------------------------------------------------
+import { serialize, deserialize } from '../src/save.js';
+{
+  // mine a deposit so a modified chunk must be persisted
+  game.world.extract(7, -5, 50);
+  const minedReserve = game.world.getReserve(7, -5);
+  const snap = JSON.parse(JSON.stringify(serialize(game)));
+  const loaded = deserialize(snap);
+
+  check('save preserves tick', loaded.tick === game.tick);
+  check('save preserves building count', loaded.buildings.size === game.buildings.size);
+  check('save preserves a building inventory',
+    invGet([...loaded.buildings.values()].find(b => b.type === 'siphon').inv, 'crystal') ===
+    invGet([...game.buildings.values()].find(b => b.type === 'siphon').inv, 'crystal'));
+  check('save preserves player inventory',
+    invGet(loaded.player.inv, 'stone') === invGet(game.player.inv, 'stone'));
+  check('save preserves research unlocks',
+    loaded.research.unlocked.has('efficiency') && loaded.mods.speed === game.mods.speed);
+  check('save preserves mined deposit reserve', loaded.world.getReserve(7, -5) === minedReserve);
+  check('save preserves wraith kills', loaded.stats.wraithKills === game.stats.wraithKills);
+  check('save only stores modified chunks (sparse)', snap.chunks.length < 50,
+    `${snap.chunks.length} chunks stored`);
+
+  // loaded game keeps simulating without error
+  loaded.research.unlocked.add('golems');
+  for (let i = 0; i < 30; i++) gameTick(loaded);
+  check('loaded game keeps ticking', loaded.tick > game.tick);
+}
+
 // --- determinism sanity: same seed, same world -------------------------------------
 import { World } from '../src/world.js';
 const w1 = new World(7), w2 = new World(7);

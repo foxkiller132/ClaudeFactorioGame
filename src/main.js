@@ -6,13 +6,51 @@ import { gameTick } from './game.js';
 import { Renderer } from './render.js';
 import { UI } from './ui.js';
 import { UPS, PLAYER_SPEED } from './config.js';
+import {
+  saveToStorage, loadFromStorage, copyStateInto, hasSave,
+} from './save.js';
 
 const canvas = document.getElementById('game');
 const game = createGame(Date.now() & 0xffff);
 const renderer = new Renderer(canvas, game);
 const ui = new UI(game, renderer);
 
-logMsg(game, 'Build a Ley Tap on the ley well, then a Siphon on the crystals.');
+// Resume a previous session if one is stored; otherwise start fresh.
+if (hasSave()) {
+  try {
+    copyStateInto(game, loadFromStorage());
+    renderer.chunkCache.clear();
+    renderer.cam.x = game.player.x;
+    renderer.cam.y = game.player.y;
+    logMsg(game, 'Saved realm restored. (F5 save · F9 reload · F8 new world)');
+  } catch (err) {
+    logMsg(game, 'Could not read save: ' + err.message);
+  }
+} else {
+  logMsg(game, 'Build a Ley Tap on the ley well, then a Siphon on the crystals.');
+}
+
+function doSave() {
+  try {
+    const bytes = saveToStorage(game);
+    logMsg(game, `Realm saved (${(bytes / 1024).toFixed(1)} KB).`);
+  } catch (err) {
+    logMsg(game, 'Save failed: ' + err.message);
+  }
+}
+
+function doLoad() {
+  const loaded = loadFromStorage();
+  if (!loaded) { logMsg(game, 'No save to load.'); return; }
+  copyStateInto(game, loaded);
+  renderer.chunkCache.clear();
+  ui.selected = null;
+  logMsg(game, 'Realm reloaded.');
+}
+
+// Autosave every 2 minutes of real time and on tab close.
+let autosaveAt = performance.now() + 120000;
+addEventListener('beforeunload', () => { try { saveToStorage(game); } catch {} });
 
 function resize() {
   canvas.width = innerWidth;
@@ -26,6 +64,16 @@ resize();
 const keys = new Set();
 addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT') return;
+  if (e.key === 'F5') { e.preventDefault(); doSave(); return; }
+  if (e.key === 'F9') { e.preventDefault(); doLoad(); return; }
+  if (e.key === 'F8') {
+    e.preventDefault();
+    copyStateInto(game, createGame(Date.now() & 0xffff));
+    renderer.chunkCache.clear();
+    ui.selected = null;
+    logMsg(game, 'A new realm awakens.');
+    return;
+  }
   keys.add(e.key.toLowerCase());
   if (e.key === 'Escape') ui.setTool('select');
 });
@@ -112,6 +160,11 @@ function frame(now) {
     gameTick(game);
     ticks++;
     acc -= step;
+  }
+
+  if (now >= autosaveAt) {
+    autosaveAt = now + 120000;
+    doSave();
   }
 
   renderer.draw(now / 1000);

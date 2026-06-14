@@ -52,6 +52,12 @@ Hover anything —
 buildings, deposits, wraiths, golems, shrines, toolbar buttons, techs — for a
 context box describing it.
 
+Your realm autosaves every two minutes and on tab close, and resumes
+automatically next visit. **F5** saves now, **F9** reloads the last save, and
+**F8** abandons it for a fresh world. Saves are sparse — only the chunks you've
+altered (mined deposits) are stored alongside your buildings and progress, so
+the file scales with what you've changed, not how far you've explored.
+
 ### Theme mapping
 
 | Factorio | Arcanum |
