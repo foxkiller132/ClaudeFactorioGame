@@ -74,6 +74,7 @@ addEventListener('keydown', e => {
     logMsg(game, 'A new realm awakens.');
     return;
   }
+  if (e.key.toLowerCase() === 'r') { ui.rotate(); return; }
   keys.add(e.key.toLowerCase());
   if (e.key === 'Escape') ui.setTool('select');
 });

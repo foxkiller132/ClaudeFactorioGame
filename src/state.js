@@ -50,6 +50,7 @@ export function createGame(seed = 1337) {
     networksDirty: true,
     networks: [],             // [{ sources: [b], supply, demand, ratio }]
     golems: [],
+    conduits: [],             // flat list of conduit buildings for the belt system
     wraiths: [],
     nests: [],
     jobs: [],
@@ -89,7 +90,8 @@ function walkable(game, x, y) {
   const tx = Math.floor(x), ty = Math.floor(y);
   const t = game.world.getTile(tx, ty);
   if (t === T_ROCK || t === T_ABYSS) return false;
-  return !game.byTile.has(tx + ',' + ty);
+  const b = buildingAt(game, tx, ty);
+  return !b || b.def.walkable; // the wizard steps over conduits
 }
 
 // Move the wizard by (dx, dy), sliding along blocked axes.
@@ -125,7 +127,7 @@ export function canPlace(game, type, x, y) {
   return null;
 }
 
-export function placeBuilding(game, type, x, y) {
+export function placeBuilding(game, type, x, y, dir = 0) {
   const err = canPlace(game, type, x, y);
   if (err) return err;
   const def = BUILDINGS[type];
@@ -135,6 +137,7 @@ export function placeBuilding(game, type, x, y) {
     hp: def.hp, inv: new Map(),
     recipeId: type === 'runeforge' ? 'runestone' : null,
     progress: 0, network: -1, ratio: 0, wants: false,
+    dir: def.rotatable ? (dir & 3) : 0,   // 0=E 1=S 2=W 3=N
     incoming: new Map(),   // item -> count reserved by inbound golems
     reserved: new Map(),   // item -> count reserved by outbound golems
     linkId: 0, cool: 0,
@@ -151,6 +154,7 @@ export function placeBuilding(game, type, x, y) {
       game.golems.push({ x: x + 0.5, y: y + 0.5, denId: b.id, state: 'idle', job: null, carry: null });
     }
   }
+  if (def.conduit) game.conduits.push(b);
   return b;
 }
 
@@ -169,6 +173,10 @@ export function removeBuilding(game, b, refund = true) {
   }
   if (b.type === 'golem_den') {
     game.golems = game.golems.filter(g => g.denId !== b.id);
+  }
+  if (b.def.conduit) {
+    const i = game.conduits.indexOf(b);
+    if (i >= 0) game.conduits.splice(i, 1);
   }
   if (b.type === 'portal' && b.linkId) {
     const twin = game.buildings.get(b.linkId);

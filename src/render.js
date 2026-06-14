@@ -30,6 +30,7 @@ export class Renderer {
     this.hover = null;                    // {x, y} tile under cursor
     this.hoverF = null;                   // precise world coords under cursor
     this.placing = null;                  // building type being placed (ghost)
+    this.placingDir = 0;                  // facing of the placement ghost
     this.pLastX = game.player.x;          // wizard walk-cycle bookkeeping
     this.pLastY = game.player.y;
     this.pFace = 1;
@@ -151,9 +152,15 @@ export class Renderer {
       this.glyph(ctx, '☠', sx, sy, z * 0.7 * pulse);
     }
 
+    // conduits (flat directional tiles, drawn under buildings)
+    for (const b of game.conduits) {
+      if (!inView(b.x, b.y)) continue;
+      this.drawConduit(b, t);
+    }
+
     // buildings
     for (const b of game.buildings.values()) {
-      if (!inView(b.x, b.y)) continue;
+      if (!inView(b.x, b.y) || b.def.conduit) continue;
       const [sx, sy] = this.worldToScreen(b.x, b.y);
       const cxm = sx + z / 2, cym = sy + z / 2;
       const working = b.wants && b.ratio > 0;
@@ -279,6 +286,24 @@ export class Renderer {
       ctx.fillRect(sx, sy, z, z);
       ctx.globalAlpha = 1;
       const def = this.placingDef;
+      // facing arrow for rotatable buildings (conduits)
+      if (def && def.rotatable) {
+        const [dx, dy] = [[1, 0], [0, 1], [-1, 0], [0, -1]][this.placingDir & 3];
+        const cxm = sx + z / 2, cym = sy + z / 2;
+        ctx.strokeStyle = '#0a1a24';
+        ctx.lineWidth = Math.max(2, z / 8);
+        ctx.beginPath();
+        ctx.moveTo(cxm - dx * z * 0.3, cym - dy * z * 0.3);
+        ctx.lineTo(cxm + dx * z * 0.3, cym + dy * z * 0.3);
+        ctx.stroke();
+        const px = -dy, py = dx;
+        ctx.beginPath();
+        ctx.moveTo(cxm + dx * z * 0.3, cym + dy * z * 0.3);
+        ctx.lineTo(cxm + (px - dx) * z * 0.18, cym + (py - dy) * z * 0.18);
+        ctx.moveTo(cxm + dx * z * 0.3, cym + dy * z * 0.3);
+        ctx.lineTo(cxm + (-px - dx) * z * 0.18, cym + (-py - dy) * z * 0.18);
+        ctx.stroke();
+      }
       if (def && def.coverage) {
         const [gx, gy] = this.worldToScreen(x + 0.5, y + 0.5);
         ctx.strokeStyle = 'rgba(160, 120, 255, 0.6)';
@@ -324,6 +349,54 @@ export class Renderer {
           glow.addColorStop(1, 'rgba(190, 130, 255, 0)');
           ctx.fillStyle = glow;
           ctx.beginPath(); ctx.arc(sx, sy, z * 1.3, 0, 7); ctx.fill();
+        }
+      }
+    }
+  }
+
+  drawConduit(b, t) {
+    const { ctx } = this;
+    const z = this.cam.zoom;
+    const [sx, sy] = this.worldToScreen(b.x, b.y);
+    const [dx, dy] = [[1, 0], [0, 1], [-1, 0], [0, -1]][b.dir];
+    const cxm = sx + z / 2, cym = sy + z / 2;
+
+    // channel bed
+    ctx.fillStyle = '#10202c';
+    ctx.fillRect(sx + 1, sy + 1, z - 2, z - 2);
+    ctx.strokeStyle = 'rgba(122, 208, 255, 0.5)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(sx + 1.5, sy + 1.5, z - 3, z - 3);
+
+    // animated flow chevrons along the facing direction
+    if (z >= 8) {
+      ctx.strokeStyle = 'rgba(122, 208, 255, 0.7)';
+      ctx.lineWidth = Math.max(1, z / 14);
+      const px = -dy, py = dx; // perpendicular
+      for (let i = 0; i < 2; i++) {
+        const f = ((b.progress + i * 0.5) % 1) - 0.5; // -0.5..0.5 along dir
+        const hx = cxm + dx * f * z, hy = cym + dy * f * z;
+        ctx.beginPath();
+        ctx.moveTo(hx - dx * z * 0.12 + px * z * 0.18, hy - dy * z * 0.12 + py * z * 0.18);
+        ctx.lineTo(hx + dx * z * 0.12, hy + dy * z * 0.12);
+        ctx.lineTo(hx - dx * z * 0.12 - px * z * 0.18, hy - dy * z * 0.12 - py * z * 0.18);
+        ctx.stroke();
+      }
+    }
+
+    // carried items slide along the channel
+    if (z >= 12) {
+      const items = [...b.inv];
+      let slot = 0, total = 0;
+      for (const [, n] of items) total += n;
+      for (const [item, n] of items) {
+        for (let k = 0; k < n; k++) {
+          const frac = total > 1 ? slot / (total) : 0.5;
+          const f = -0.35 + frac * 0.7 + 0.12 * Math.sin(t * 3 + slot);
+          const ix = cxm + dx * f * z, iy = cym + dy * f * z;
+          ctx.fillStyle = (ITEMS[item] || {}).color || '#fff';
+          ctx.fillRect(ix - z * 0.1, iy - z * 0.1, z * 0.2, z * 0.2);
+          slot++;
         }
       }
     }

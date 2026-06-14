@@ -135,6 +135,48 @@ if (game.nests.length) {
   check('reach: far tile out of range', !inReach(g2, Math.floor(g2.player.x) + 30, Math.floor(g2.player.y)));
 }
 
+// --- conduits: belt-style transport ---------------------------------------------------
+{
+  const g3 = createGame(42);
+  for (const it of ['stone', 'crystal', 'shard']) invAdd(g3.player.inv, it, 500);
+  // siphon on the crystal patch -> 3 east-facing conduits -> infuser
+  const sp = placeBuilding(g3, 'siphon', 7, -5);
+  check('conduit chain: siphon placed', typeof sp === 'object', String(sp));
+  const c1 = placeBuilding(g3, 'conduit', 8, -5, 0); // facing East
+  const c2 = placeBuilding(g3, 'conduit', 9, -5, 0);
+  const c3 = placeBuilding(g3, 'conduit', 10, -5, 0);
+  const inf = placeBuilding(g3, 'infuser', 11, -5);
+  check('conduits + infuser placed', [c1, c2, c3, inf].every(b => typeof b === 'object'));
+  check('conduit registered in list', g3.conduits.length === 3);
+  // power the siphon so it produces
+  placeBuilding(g3, 'ley_tap', 0, 0);
+  for (let i = 1; i <= 4; i++) placeBuilding(g3, 'obelisk', i * 2 - 1, -2);
+  // seed the siphon directly to guarantee throughput regardless of mining luck
+  invAdd(sp.inv, 'crystal', 10);
+  for (let i = 0; i < 120; i++) gameTick(g3);
+  check('conduit delivered crystals to infuser',
+    invGet(inf.inv, 'crystal') > 0 || invGet(inf.inv, 'shard') > 0,
+    `infuser has crystal:${invGet(inf.inv, 'crystal')} shard:${invGet(inf.inv, 'shard')}`);
+
+  // one item advances at most one tile per tick (no teleporting down the line)
+  const g4 = createGame(7);
+  invAdd(g4.player.inv, 'stone', 50);
+  const a = placeBuilding(g4, 'conduit', 20, 0, 0);
+  const b = placeBuilding(g4, 'conduit', 21, 0, 0);
+  invAdd(a.inv, 'stone', 1);
+  gameTick(g4);
+  check('item moves exactly one conduit per tick',
+    invGet(a.inv, 'stone') === 0 && invGet(b.inv, 'stone') === 1);
+
+  // conduits are walkable (the wizard steps over them)
+  const g5 = createGame(7);
+  invAdd(g5.player.inv, 'stone', 50);
+  g5.player.x = 20.5; g5.player.y = 0.5;
+  placeBuilding(g5, 'conduit', 21, 0, 0);
+  movePlayer(g5, 1, 0);
+  check('wizard walks over conduits', g5.player.x > 21);
+}
+
 // --- save / load round-trip ---------------------------------------------------------
 import { serialize, deserialize } from '../src/save.js';
 {

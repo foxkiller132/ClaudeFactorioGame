@@ -17,7 +17,7 @@ function serializeBuilding(b) {
   return {
     id: b.id, type: b.type, x: b.x, y: b.y, hp: b.hp,
     recipeId: b.recipeId, progress: b.progress, cool: b.cool, linkId: b.linkId,
-    inv: mapToObj(b.inv),
+    dir: b.dir, inv: mapToObj(b.inv),
   };
   // incoming/reserved are golem-haul reservations; jobs are dropped on load so
   // we intentionally omit them — they get rebuilt by the next job scan.
@@ -80,6 +80,7 @@ export function deserialize(data) {
     let set = game.byChunk.get(ck);
     if (!set) game.byChunk.set(ck, set = new Set());
     set.add(b.id);
+    if (b.def.conduit) game.conduits.push(b);
   }
 
   game.golems = data.golems.map(g => ({
@@ -110,6 +111,7 @@ function reviveBuilding(game, bd) {
     hp: bd.hp, inv: objToMap(bd.inv),
     recipeId: bd.recipeId,
     progress: bd.progress, network: -1, ratio: 0, wants: false,
+    dir: bd.dir || 0,
     incoming: new Map(), reserved: new Map(),
     linkId: bd.linkId || 0, cool: bd.cool || 0,
   };
@@ -134,8 +136,8 @@ export function loadFromStorage() {
 export function copyStateInto(dst, src) {
   for (const k of [
     'seed', 'tick', 'nextId', 'world', 'buildings', 'byTile', 'byChunk',
-    'networks', 'networksDirty', 'golems', 'wraiths', 'nests', 'jobs',
-    'corruption', 'player', 'research', 'mods', 'stats',
+    'networks', 'networksDirty', 'golems', 'conduits', 'wraiths', 'nests',
+    'jobs', 'corruption', 'player', 'research', 'mods', 'stats',
   ]) {
     dst[k] = src[k];
   }

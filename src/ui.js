@@ -21,6 +21,7 @@ export class UI {
     this.tool = 'select';        // 'select' | 'mine' | 'banish' | building type
     this.selected = null;        // selected building
     this.linking = null;         // portal awaiting its twin
+    this.dir = 0;                // pending placement facing (0=E 1=S 2=W 3=N)
     this.mouse = [0, 0];         // last cursor position (screen px)
     this.uiTip = null;           // tooltip text for a hovered [data-tip] element
     this.el = {
@@ -40,8 +41,20 @@ export class UI {
     const isBuilding = tool in BUILDINGS;
     this.renderer.placing = isBuilding ? tool : null;
     this.renderer.placingDef = isBuilding ? BUILDINGS[tool] : null;
+    this.renderer.placingDir = this.dir;
     for (const btn of this.el.toolbar.children) {
       btn.classList.toggle('active', btn.dataset.tool === tool);
+    }
+  }
+
+  // Rotate the pending placement direction (R key). Only meaningful for
+  // rotatable buildings like conduits.
+  rotate() {
+    this.dir = (this.dir + 1) & 3;
+    this.renderer.placingDir = this.dir;
+    if (this.tool in BUILDINGS && BUILDINGS[this.tool].rotatable) {
+      const names = ['East', 'South', 'West', 'North'];
+      toastMsg(this.game, this.game.player.x, this.game.player.y - 1, `Facing ${names[this.dir]}`);
     }
   }
 
@@ -83,7 +96,7 @@ export class UI {
       return;
     }
     if (this.tool in BUILDINGS) {
-      const res = placeBuilding(game, this.tool, tx, ty);
+      const res = placeBuilding(game, this.tool, tx, ty, this.dir);
       if (typeof res === 'string') toastMsg(game, tx + 0.5, ty + 0.5, res);
       return;
     }

@@ -33,13 +33,18 @@ node test/smoke.mjs
 4. Before you have golems, you are the logistics: select a building within
    reach and use **Take all** / **Feed** in the inspector to move items
    between buildings and your satchel by hand.
-5. Research **Golem Legion**, build a **Golem Den**: golems automatically haul
-   items between producers, consumers, and **Reliquary** storage.
-6. Your engine emits corruption; distant **dark shrines** (☠) drink it and
+5. For cheap automatic transport, lay **Conduit Runes** (➤) — directional belt
+   tiles (1 stone each). Press **R** while placing to rotate. A conduit pulls
+   from the building behind it and carries items one tile per tick to the
+   conduit or input ahead; you can walk over them.
+6. Research **Golem Legion**, build a **Golem Den**: golems automatically haul
+   items between producers, consumers, and **Reliquary** storage — best for
+   sparse, long-range hauling where belts would be tedious.
+7. Your engine emits corruption; distant **dark shrines** (☠) drink it and
    birth wraiths that hunt your buildings. Defend with **Ward Towers** (†),
    harvest **wraith essence** from kills, research **Rite of Banishment**, and
    destroy shrines with Banish Sigils (✴ tool).
-7. Research **Portal Network** for long-range logistics: a linked portal pulls
+8. Research **Portal Network** for long-range logistics: a linked portal pulls
    from adjacent outputs and its twin pushes into adjacent inputs anywhere on
    the map.
 
@@ -66,6 +71,7 @@ the file scales with what you've changed, not how far you've explored.
 | Mining drills | Crystal siphons on crystal/stone deposits |
 | Furnaces / assemblers | Arcane infusers / runeforges |
 | Labs + science packs | Athenaeums + arcane scrolls |
+| Transport belts | Conduit runes (directional, one tile/tick, walkable) |
 | Logistics bots | Golems (den-based, range-limited, fly straight lines) |
 | Trains | Portal pairs teleporting items at a mana cost |
 | Pollution | Thaumic corruption (chunk-grid diffusion) |
@@ -88,6 +94,7 @@ src/
   systems/
     power.js       mana networks (union-find over sources, per-network ratios)
     production.js  extraction & crafting (declare-work / satisfy / act phases)
+    conduits.js    belt-style item transport (snapshot-stepped, O(active))
     logistics.js   golem job matching with reservation bookkeeping
     portals.js     linked-portal item teleportation
     enemies.js     corruption diffusion, shrines, wraiths, wards, banishment

@@ -4,6 +4,7 @@
 import { declareWork, productionTick } from './systems/production.js';
 import { powerTick } from './systems/power.js';
 import { golemTick } from './systems/logistics.js';
+import { conduitTick } from './systems/conduits.js';
 import { portalTick } from './systems/portals.js';
 import { corruptionTick, wraithTick, wardTick } from './systems/enemies.js';
 import { researchTick } from './systems/research.js';
@@ -14,6 +15,7 @@ export function gameTick(game) {
   declareWork(game);
   powerTick(game);
   productionTick(game);
+  conduitTick(game);
   golemTick(game);
   portalTick(game);
   corruptionTick(game);

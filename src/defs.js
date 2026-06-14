@@ -54,6 +54,14 @@ export const BUILDINGS = {
     manaUse: 5, corruption: 0.4,
     desc: 'Crafts advanced components. Select its recipe in the inspector.',
   },
+  conduit: {
+    name: 'Conduit Rune', glyph: '➤', color: '#7ad0ff', hp: 60,
+    cost: { stone: 1 },
+    conduit: true, rotatable: true, walkable: true, corruption: 0,
+    desc: 'Cheap directional transport. Pulls items from the building behind it ' +
+      'and carries them one tile per tick to a conduit or input ahead. ' +
+      'Press R to rotate while placing.',
+  },
   reliquary: {
     name: 'Reliquary', glyph: '▤', color: '#a8a890', hp: 150,
     cost: { stone: 6 },

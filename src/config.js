@@ -42,6 +42,10 @@ export const NEST_CHANCE = 0.10;
 // Power
 export const LINK_RANGE = 12;         // max distance between mana sources to join a network
 
+// Conduits (belt analogue): direction vectors E,S,W,N and per-tile buffer.
+export const DIRS = [[1, 0], [0, 1], [-1, 0], [0, -1]];
+export const CONDUIT_CAP = 4;         // items a single conduit tile can hold
+
 // Hand mining yield per click
 export const MINE_YIELD = 2;
 
